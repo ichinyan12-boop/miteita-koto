@@ -203,7 +203,9 @@ async function unpack(s){
   if ([...obj.n].length > 20 || obj.m.some((x,i) => [...x].length > lim[i] + 10)) throw new Error("long");
   return obj;
 }
-function baseUrl(){ return location.origin + location.pathname; }
+/* 受け手のリンクは常に本体URL（itch等の埋め込みから作っても github.io へ飛ぶ）。ローカル確認時だけ現在地 */
+const CANONICAL = "https://ichinyan12-boop.github.io/miteita-koto/";
+function baseUrl(){ return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? location.origin + location.pathname : CANONICAL; }
 
 /* ---------- 送り手 ---------- */
 async function senderFlow(){
