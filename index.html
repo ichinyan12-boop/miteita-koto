@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>見ていたこと</title>
+<meta property="og:title" content="見ていたこと">
+<meta property="og:description" content="誰かについて覚えている三つの小さなことを、その人へ渡す短い作品。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ichinyan12-boop.github.io/miteita-koto/">
+<meta property="og:image" content="https://ichinyan12-boop.github.io/miteita-koto/ogp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="誰かについて覚えている三つの小さなことを、その人へ渡す短い作品。">
+<style>
+  :root{
+    --bg:#0e0e0f; --fg:#d9d5cd; --dim:#7a766f; --line:#2a2a2c; --acc:#c9c2b3;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP","Source Han Serif JP",serif;
+    font-size:17px;line-height:2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}
+  body{overflow:hidden}
+  #stage{position:fixed;inset:0;display:flex;justify-content:center;padding:32px 24px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .scene{max-width:34em;width:100%;margin:auto;opacity:0;transition:opacity 1.6s ease}
+  .scene.show{opacity:1}
+  .scene.fast{transition-duration:.6s}
+  p{margin:0 0 1.2em}
+  .dim{color:var(--dim)}
+  .small{font-size:.85em}
+  .center{text-align:center}
+  .memory{white-space:pre-wrap;word-break:break-word;font-size:1.08em;line-height:2.2}
+  .place{position:fixed;left:24px;top:22px;pointer-events:none;font-size:.78em;color:var(--dim);letter-spacing:.2em;opacity:0;transition:opacity 2s}
+  .place.show{opacity:.8}
+  #close{position:fixed;right:16px;top:12px;width:40px;height:40px;border:0;background:none;color:var(--dim);z-index:10;
+    font-size:22px;cursor:pointer;opacity:.55;display:none;font-family:inherit}
+  #close:hover{opacity:1}
+  button.b{font-family:inherit;font-size:1em;letter-spacing:.08em;color:var(--fg);background:none;border:1px solid var(--line);
+    padding:.55em 1.6em;margin:.4em .5em .4em 0;cursor:pointer;border-radius:2px}
+  button.b:hover{border-color:var(--acc)}
+  button.b.q{border:0;color:var(--dim);padding-left:0}
+  button.b.q:hover{color:var(--fg)}
+  .actions{margin-top:1.6em}
+  .next{position:fixed;right:24px;bottom:22px;color:var(--dim);font-size:.85em;letter-spacing:.2em;background:none;border:0;
+    cursor:pointer;font-family:inherit;opacity:0;transition:opacity 1.2s}
+  .next.show{opacity:.8}
+  textarea,input{font-family:inherit;font-size:1.05em;line-height:1.9;letter-spacing:.04em;color:var(--fg);background:#141415;
+    border:1px solid var(--line);border-radius:2px;padding:.7em .9em;width:100%;outline:none}
+  textarea:focus,input:focus{border-color:var(--acc)}
+  textarea{min-height:6.5em;resize:vertical}
+  textarea::placeholder,input::placeholder{color:#4e4b46}
+  .count{font-size:.78em;color:var(--dim);text-align:right;margin-top:.3em}
+  .count.over{color:#b06a5a}
+  .q{font-size:1.02em;margin-bottom:.9em}
+  .ex{color:var(--dim);font-size:.86em;line-height:1.9;margin:.2em 0 1.1em}
+  .err{color:#b06a5a;font-size:.88em;min-height:1.6em;margin-top:.4em}
+  .linkbox{background:#141415;border:1px solid var(--line);padding:.8em 1em;word-break:break-all;font-size:.72em;line-height:1.6;max-height:9em;overflow:auto;
+    color:var(--acc);border-radius:2px;user-select:all}
+  .rule{border:0;border-top:1px solid var(--line);margin:1.6em 0}
+  a{color:var(--acc)}
+
+  /* 歩く（受け手・縦の一本道） */
+  #walk{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;display:none;scroll-snap-type:y proximity;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #walk::-webkit-scrollbar{display:none}
+  #walk.on{display:block}
+  #walk.lock{overflow:hidden}
+  .spot{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:32px 24px;
+    scroll-snap-align:start;position:relative}
+  .spot .name{position:absolute;left:24px;top:22px;font-size:.78em;color:var(--dim);letter-spacing:.2em;opacity:0;transition:opacity 2.4s}
+  .spot.seen .name{opacity:.8}
+  .spot .memory{max-width:34em;margin:0 auto;width:100%;min-height:4.4em}
+  .spot .hint{max-width:34em;margin:1.6em auto 0;width:100%;color:var(--dim);opacity:0;transition:opacity 2s;font-size:.9em;letter-spacing:.3em}
+  .spot .hint.show{opacity:.5}
+  .hall{height:120vh;height:120dvh}
+  .hall.long{height:150vh;height:150dvh}
+  .pass{min-height:70vh;min-height:70dvh;display:flex;align-items:center;justify-content:center;color:var(--dim);
+    font-size:.85em;letter-spacing:.3em;opacity:0;transition:opacity 2.4s}
+  .pass.seen{opacity:.8}
+  .fin{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;
+    scroll-snap-align:start;opacity:0;transition:opacity 2.4s}
+  .fin.seen{opacity:1}
+  .fin .actions{opacity:0;transition:opacity 2s}
+  .fin .actions.show{opacity:1}
+  .word{opacity:0;transition:opacity 1.8s;margin:0 0 1.2em}
+  .word.show{opacity:1}
+  @media (max-width:420px){html{font-size:15.5px} #stage{padding:28px 18px}}
+</style>
+</head>
+<body>
+<div id="place" class="place"></div>
+<button id="close" aria-label="閉じる" title="閉じる">×</button>
+<div id="stage"></div>
+<div id="walk"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- 文言（固定・作者側） ---------- */
+const TEXT = {
+  /* 文面はすべてブラウザGPTの最終稿（.aipb/consult/gpt_a3.txt）。Claudeは書き換えない。直す時もGPTに直させる */
+  title: "見ていたこと",
+  tagline: "誰かについて覚えている三つの小さなことを、その人へ渡す短い作品。",
+  notice: "これは、相手を説得したり、関係を取り戻したりするためのものではありません。連絡を拒否されている相手には送らないでください。同じ人に繰り返し送ることもやめてください。",
+  startButton: "ひとり、思い浮かべる",
+  aboutButton: "この作品について",
+  name: { q: "あなたの名前を教えてください。必須です。相手が開く前に、最初にこの名前だけが表示されます。", ex: "匿名では送れません。受け取った人が、誰から届いたものか判断できるようにするためです。" },
+  q: [
+    { key:"habit", label:"見ていたこと", q:"その人がよくする、本人はあまり気づいていなさそうな仕草や癖を一つ、40〜70字で書いてください。", ex:"例: 考えているとき、眼鏡を指で少し上げる／冷蔵庫を閉める前に、少しだけ中を見る／笑う前に、一度だけ鼻から息を出す", min:8, max:70, ph:"" },
+    { key:"left",  label:"残っていること", q:"その人から教わって、今も自分の生活に残っている小さなことを一つ、40〜80字で書いてください。", ex:"例: 卵焼きは、砂糖より先に醤油を入れる／濡れた傘は、開いて乾かしてからしまう／エレベーターを降りる人を先に待つ", min:8, max:80, ph:"" },
+    { key:"scene", label:"覚えている場面", q:"大きな出来事ではなかったのに、なぜか今も覚えている二人の場面を、60〜120字で書いてください。場所・時間・天気・物のどれかを一つ入れてください。", ex:"例: 夜のコンビニの前で、買ったアイスを食べ終わるまで話していた／雨が止むまで駅の屋根の下にいて、濡れた靴のことばかり気にしていた／冬の朝、青いマグカップを二人で探した", min:12, max:120, ph:"" },
+  ],
+  nextButton: "次へ",
+  err: { short: "もう少しだけ書いてください。{min}字以上でお願いします。", long: "少し長いようです。ひとつのことだけ残して、短くしてください。", ng: "この内容は送れません。相手を脅したり、傷つけたりする言葉を除いて書き直してください。", eval: "「ありがとう」「大好き」など、気持ちや評価を表す言葉が入っています。この作品では、気持ちそのものより、見たことや残ったことを書くことを勧めています。このままでよければ、もう一度「次へ」を押してください。", contact: "電話番号やメールアドレスのような文字が入っています。この文章は、リンクを開けた人なら誰でも読むことができます。残してよければ、もう一度「次へ」を押してください。" },
+  confirm: { lead: "この三つを、そのまま渡します。言葉を整えたり、付け足したりはしません。AIも制作者も、中の文章には手を入れません。", ok: "リンクを作る", redo: "書き直す" },
+  link: { lead: "この人にだけ、送ってください。", copy: "リンクをコピー", copied: "コピーしました", share: "共有を開く", warn: "このリンクを開けた人は、誰でも中身を読むことができます。一対一で送ってください。SNSやグループには貼らないでください。", note: "あなたには完成形は表示されません。相手が開いたかどうかは、あなたにも制作者にも分かりません。この作品には、返事をする仕組みもありません。", home: "入口に戻る" },
+  r: { from: "{name}さんから届いています", pre: "この中には、送った人があなたについて覚えている三つのことが入っています。表示された名前は送った人自身が書いたもので、本人確認はしていません。心当たりがないときや、見たくないときは、開かずに閉じてください。", open: "開く", decline: "開かずに閉じる" },
+  fixed: {
+    arrived: "三つ、届いています",
+    inOrder: "順番に開きます",
+    after2: "教えたほうが、先に忘れていることもある。",
+    reason: "なぜ覚えていたのかは、書かれていません。",
+    remained: "ただ、残っていました。",
+    end: "三つ、ここまでです。",
+  },
+  places: ["玄関", "小さな机", "窓と椅子"],
+  byeButton: "閉じる",
+  againButton: "ひとり、思い浮かべる",
+  closed: "ここで閉じました。何も開いていません。",
+  badLink: "このリンクは開けませんでした。URLが途中で切れているか、内容を読み取れません。",
+  about: "『見ていたこと』は、誰かについて覚えている三つの小さなことを、その人へ渡すための作品です。\n\n画面、順番、間、固定の文章という「箱」は、制作者がAIと一緒に作りました。その中に入る三つの言葉は、送った人自身が書いたものです。内容についての責任も、送った人にあります。\n\n入力された言葉は、AIにも制作者にも送られません。サーバーには保存せず、生成されたリンクの中だけに入ります。制作者は入力内容を受け取らず、この作品独自のアクセス記録も取りません。ただし、ページの配信元など外部事業者が記録を残す場合は、それぞれの事業者の方針に従います。\n\n相手が作品を開いたかどうかを知らせる仕組みはありません。送り手にも、制作者にも分かりません。\n\n最初に表示される送り手の名前は、送った人自身が入力したもので、本人確認はしていません。誰から届いたものかは、リンクが送られてきたメッセージや送信元を見て確かめてください。\n\nこの作品を、嫌がらせ、つきまとい、相手への説得、関係を取り戻すための働きかけには使わないでください。連絡を拒否されている相手には送れません。同じ相手へ繰り返し送ることもやめてください。\n\n心当たりがない、怖い、見たくないと感じたときは、開く必要はありません。そのまま閉じてください。",
+  aboutBack: "戻る",
+};
+
+/* 明白な脅迫・侮辱だけ弾く（感情判定はしない） */
+/* 後読み（lookbehind）は古いSafariで構文エラーになるので使わない。「必死ね」は先に取り除いてから判定する */
+const NG_RE = /(お前|おまえ|あなた|君|きみ|てめえ)[はを、 ]*(殺す|殺してやる|死ね|消えろ)|殺してやる|殺すぞ|殺しに(行|い)く|死ね(?![るた])|死んでくれ|自殺しろ|レイプ|(お前|あなた|君)を犯(す|し)|ブス(?![ッっ])|キモ[いイ]/;
+const NG = { test: (x) => NG_RE.test(String(x).replace(/必死/g, "")) };
+/* 連絡先らしきもの（弾かずに注意だけ出す） */
+const CONTACT = /\d{2,4}-\d{2,4}-\d{3,4}|〒?\d{3}-\d{4}|[\w.+-]+@[\w-]+\.[\w.]+|0\d{9,10}/;
+
+/* ---------- 匿名集計（任意・既定オフ） ----------
+   GoatCounter: Cookie無し・#以降は送らない・誰が開いたかは分からない。サイトコードを入れると有効。 */
+const GC_SITE = "";  // 例: "miteitakoto" → https://miteitakoto.goatcounter.com/count
+function track(name){
+  if (!GC_SITE) return;
+  try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: name, title: name, event: true }); } catch(e){}
+}
+if (GC_SITE){
+  window.goatcounter = { allow_frame: true, no_onload: false };
+  const sc = document.createElement("script"); sc.async = true; sc.src = "https://gc.zgo.at/count.js";
+  sc.setAttribute("data-goatcounter", `https://${GC_SITE}.goatcounter.com/count`); document.head.appendChild(sc);
+}
+
+/* ---------- 小さな道具 ---------- */
+const $ = (s) => document.querySelector(s);
+const stage = $("#stage"), walk = $("#walk"), closeBtn = $("#close"), placeEl = $("#place");
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+let token = 0; // 進行の世代。閉じたら古い進行は止まる
+const alive = (t) => t === token;
+
+function esc(s){ return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function render(html, cls){
+  stage.innerHTML = `<div class="scene ${cls||""}">${html}</div>`;
+  const sc = stage.firstElementChild;
+  requestAnimationFrame(() => requestAnimationFrame(() => sc.classList.add("show")));
+  return sc;
+}
+async function fadeOut(sc, ms){ if(!sc) return; sc.classList.remove("show"); await sleep(ms ?? 1600); }
+function setPlace(name){ placeEl.classList.remove("show"); if(!name) return; setTimeout(() => { placeEl.textContent = name; placeEl.classList.add("show"); }, 600); }
+/* 文字を少しずつ出す */
+async function typeIn(el, text, t, perChar){
+  el.textContent = "";
+  for (const ch of text){ if(!alive(t)) return; el.textContent += ch; await sleep(perChar ?? 70); }
+}
+
+/* ---------- データの入れ物（#r=...） ---------- */
+const b64u = {
+  enc: (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""),
+  dec: (s) => { s = s.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="="; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); },
+};
+async function pack(obj){
+  const raw = new TextEncoder().encode(JSON.stringify(obj));
+  // 圧縮は3割しか縮まず、古い端末で開けなくなるので使わない（読み出しの "z" 対応だけ残す）
+  return "p" + b64u.enc(raw);
+}
+async function unpack(s){
+  const kind = s[0], body = s.slice(1);
+  if (kind !== "p" && kind !== "z") throw new Error("kind");
+  let bytes = b64u.dec(body);
+  if (kind === "z"){
+    const ds = new DecompressionStream("deflate-raw");
+    const w = ds.writable.getWriter(); w.write(bytes); w.close();
+    bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer());
+  }
+  const obj = JSON.parse(new TextDecoder().decode(bytes));
+  if (!obj || typeof obj.n !== "string" || !Array.isArray(obj.m) || obj.m.length !== 3) throw new Error("bad");
+  if (obj.m.some(x => typeof x !== "string" || NG.test(x)) || NG.test(obj.n)) throw new Error("ng");
+  const lim = [TEXT.q[0].max, TEXT.q[1].max, TEXT.q[2].max];
+  if ([...obj.n].length > 20 || obj.m.some((x,i) => [...x].length > lim[i] + 10)) throw new Error("long");
+  return obj;
+}
+function baseUrl(){ return location.origin + location.pathname; }
+
+/* ---------- 送り手 ---------- */
+async function senderFlow(){
+  token++; const t = token; closeBtn.style.display = "none"; setPlace(null);
+  history.replaceState(null, "", location.pathname); walk.classList.remove("on","lock"); if (walk._io) { walk._io.disconnect(); walk._io = null; } walk.innerHTML = "";
+
+  // 入口
+  let sc = render(`
+    <p class="center" style="font-size:1.35em;letter-spacing:.3em;margin-bottom:1.6em">${TEXT.title}</p>
+    <p class="dim">${esc(TEXT.tagline)}</p>
+    <p class="dim small" style="white-space:pre-wrap">${esc(TEXT.notice)}</p>
+    <div class="actions"><button class="b" id="start">${esc(TEXT.startButton)}</button>
+      <button class="b q" id="about">${esc(TEXT.aboutButton)}</button></div>`);
+  await new Promise(res => {
+    sc.querySelector("#start").onclick = res;
+    sc.querySelector("#about").onclick = () => { location.hash = "about"; };
+  });
+  if(!alive(t)) return;
+  await fadeOut(sc, 700);
+
+  const data = { n:"", m:["","",""] };
+  closeBtn.style.display = "block"; closeBtn.onclick = () => senderFlow();
+
+  // 名前
+  data.n = await askOne(t, {
+    q: TEXT.name.q, ex: TEXT.name.ex,
+    min:1, max:20, single:true,
+  });
+  if(!alive(t)) return;
+
+  // 三つ
+  for (let i=0;i<3;i++){
+    data.m[i] = await askOne(t, TEXT.q[i]);
+    if(!alive(t)) return;
+  }
+
+  // 確認
+  sc = render(`
+    <p class="dim small">${esc(TEXT.confirm.lead)}</p>
+    ${data.m.map((m,i)=>`<p class="memory small" style="border-left:1px solid var(--line);padding-left:1em;margin-bottom:1em">${esc(m)}</p>`).join("")}
+    <div class="actions"><button class="b" id="ok">${esc(TEXT.confirm.ok)}</button><button class="b q" id="redo">${esc(TEXT.confirm.redo)}</button></div>`);
+  const choice = await new Promise(res => { sc.querySelector("#ok").onclick = () => res("ok"); sc.querySelector("#redo").onclick = () => res("redo"); });
+  if(!alive(t)) return;
+  if (choice === "redo"){ await fadeOut(sc, 500); return senderFlow(); }
+  await fadeOut(sc, 700);
+
+  const url = baseUrl() + "#r=" + await pack(data); track("s-link");
+  sc = render(`
+    <p class="dim small">${esc(TEXT.link.lead)}</p>
+    <div class="linkbox" id="url">${esc(url)}</div>
+    <div class="actions"><button class="b" id="copy">${esc(TEXT.link.copy)}</button>${navigator.share ? `<button class="b" id="share">${esc(TEXT.link.share)}</button>` : ""}</div>
+    <hr class="rule">
+    <p class="dim small">${esc(TEXT.link.warn)}</p>
+    <p class="dim small">${esc(TEXT.link.note)}</p>
+    <div class="actions"><button class="b q" id="home">${esc(TEXT.link.home)}</button></div>`);
+  sc.querySelector("#copy").onclick = async (e) => {
+    try { await navigator.clipboard.writeText(url); e.target.textContent = TEXT.link.copied; }
+    catch { const r = document.createRange(); r.selectNodeContents($("#url")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+  };
+  const sh = sc.querySelector("#share"); if (sh) sh.onclick = () => navigator.share({ title: TEXT.title, url }).catch(()=>{});
+  sc.querySelector("#home").onclick = () => senderFlow();
+}
+
+/* 1問1画面 */
+function askOne(t, spec){
+  return new Promise(res => {
+    const field = spec.single
+      ? `<input id="f" maxlength="${spec.max}" autocomplete="off" placeholder="${esc(spec.ph||"")}">`
+      : `<textarea id="f" maxlength="${spec.max}" placeholder="${esc(spec.ph||"")}"></textarea>`;
+    const sc = render(`
+      ${spec.label ? `<p class="dim small" style="letter-spacing:.3em">${spec.label}</p>` : ""}
+      <p class="q">${esc(spec.q)}</p>
+      ${spec.ex ? `<p class="ex">${esc(spec.ex)}</p>` : ""}
+      ${field}
+      <div class="count" id="c"></div>
+      <div class="err" id="e"></div>
+      <div class="actions"><button class="b" id="go">${esc(TEXT.nextButton)}</button>${spec.optional ? '<button class="b q" id="skip">選ばない</button>' : ""}</div>`, "fast");
+    const f = sc.querySelector("#f"), c = sc.querySelector("#c"), e = sc.querySelector("#e"); let warned = false;
+    const upd = () => { const n = [...f.value].length; c.textContent = spec.max ? `${n} / ${spec.max}` : ""; c.classList.toggle("over", n > spec.max); };
+    f.addEventListener("input", () => { upd(); e.textContent = ""; }); upd(); setTimeout(() => f.focus(), 700);
+    const done = async (v) => { await fadeOut(sc, 500); res(v); };
+    sc.querySelector("#go").onclick = () => {
+      const v = f.value.replace(/\r/g,"").trim();
+      const n = [...v].length;
+      if (n < (spec.min||0)) { e.textContent = TEXT.err.short.replace("{min}", spec.min); return; }
+      if (n > spec.max) { e.textContent = TEXT.err.long; return; }
+      if (NG.test(v)) { e.textContent = TEXT.err.ng; return; }
+      if (!spec.single && warned !== "eval" && warned !== "any" && /(ありがとう|感謝|大好き|愛して)/.test(v)) { warned = "eval"; e.textContent = TEXT.err.eval; return; }
+      if (!spec.single && warned !== "contact" && warned !== "any" && CONTACT.test(v)) { warned = warned ? "any" : "contact"; e.textContent = TEXT.err.contact; return; }
+      done(v);
+    };
+    const sk = sc.querySelector("#skip"); if (sk) sk.onclick = () => done("");
+    if (spec.single) f.addEventListener("keydown", ev => { if (ev.key === "Enter") sc.querySelector("#go").click(); });
+  });
+}
+
+/* ---------- 受け手 ---------- */
+async function receiverFlow(data){
+  token++; const t = token;
+  walk.classList.remove("lock"); if (walk._io) { walk._io.disconnect(); walk._io = null; } walk.innerHTML = "";
+  closeBtn.style.display = "block";
+  closeBtn.onclick = () => closed();
+
+  // 送り手名だけ
+  let sc = render(`
+    <p class="center">${esc(TEXT.r.from.replace("{name}", data.n))}</p>
+    <p class="dim small">${esc(TEXT.r.pre)}</p>
+    <div class="actions center"><button class="b" id="open">${esc(TEXT.r.open)}</button><button class="b" id="no">${esc(TEXT.r.decline)}</button></div>`);
+  const c = await new Promise(res => { sc.querySelector("#open").onclick = () => res("open"); sc.querySelector("#no").onclick = () => res("no"); });
+  if(!alive(t)) return;
+  if (c === "no") { track("r-declined"); return closed(); }
+  track("r-open");
+  await fadeOut(sc, 1200);
+
+  sc = render(`<p class="center">${TEXT.fixed.arrived}</p><p class="center dim small">${TEXT.fixed.inOrder}</p>`);
+  await sleep(3200); if(!alive(t)) return;
+  await fadeOut(sc, 1600);
+  await sleep(1000); if(!alive(t)) return;
+  stage.innerHTML = "";
+
+  // 縦の一本道。空白が廊下。
+  walk.innerHTML = `
+    <section class="spot" data-i="0"><div class="name">${TEXT.places[0]}</div><p class="memory"></p><div class="hint">・</div></section>
+    <div class="hall"></div>
+    <section class="spot" data-i="1"><div class="name">${TEXT.places[1]}</div><p class="memory"></p><div class="hint">・</div></section>
+    <div class="hall"></div>
+    <section class="spot" data-i="2"><div class="name">${TEXT.places[2]}</div><p class="memory"></p>
+      <div style="max-width:34em;margin:2.4em auto 0;width:100%"><p class="word dim" id="w1">${TEXT.fixed.reason}</p><p class="word dim" id="w2">${TEXT.fixed.remained}</p></div>
+      <div class="hint">・</div></section>
+    <div class="hall long"></div>
+    <div class="pass">${TEXT.places[0]}</div><div class="pass">${TEXT.places[1]}</div><div class="pass">${TEXT.places[2]}</div>
+    <div class="hall"></div>
+    <section class="fin"><p class="center dim">${TEXT.fixed.end}</p>
+      <div class="actions center" id="end"><button class="b q" id="bye">${esc(TEXT.byeButton)}</button><button class="b" id="again">${esc(TEXT.againButton)}</button></div></section>`;
+  walk.scrollTop = 0; walk.classList.add("on");
+  if (!walk._bound){
+    walk._bound = true;
+    const isLocked = () => walk.classList.contains("lock");
+    const block = (e) => { if (isLocked()) e.preventDefault(); };
+    walk.addEventListener("wheel", block, { passive:false });
+    walk.addEventListener("touchmove", block, { passive:false });
+    window.addEventListener("keydown", (e) => { if (isLocked() && /^(ArrowDown|ArrowUp|PageDown|PageUp|Space| |Home|End)$/.test(e.key)) e.preventDefault(); });
+    walk.addEventListener("scroll", () => { if (isLocked() && Math.abs(walk.scrollTop - walk._lockTop) > 2) walk.scrollTop = walk._lockTop; });
+  }
+  walk.querySelector("#bye").onclick = () => closed();
+  walk.querySelector("#again").onclick = () => { track("r-again"); senderFlow(); };
+
+  const done = new Set();
+  const io = new IntersectionObserver((entries) => {
+    for (const en of entries){
+      if (!en.isIntersecting || !alive(t)) continue;
+      const el = en.target;
+      if (el.classList.contains("spot")){
+        const i = +el.dataset.i; if (done.has(i)) continue; done.add(i);
+        el.classList.add("seen"); arrive(el, i, t);
+      } else if (el.classList.contains("pass")){
+        el.classList.add("seen");
+      } else if (el.classList.contains("fin")){
+        el.classList.add("seen"); track("r-end"); setTimeout(() => { if(alive(t)) el.querySelector("#end").classList.add("show"); }, 3200);
+      }
+    }
+  }, { root: walk, threshold: 0.55 });
+  walk._io = io; walk.querySelectorAll(".spot,.pass,.fin").forEach(el => io.observe(el));
+}
+
+/* 地点に着いたとき */
+async function arrive(el, i, t){
+  const data = CURRENT; if (!data) return;
+  const m = el.querySelector(".memory"), hint = el.querySelector(".hint");
+  if (i < 2){
+    await sleep(2400); if(!alive(t)) return;
+    await typeIn(m, data.m[i], t, 80); if(!alive(t)) return;
+    if (i === 1){
+      await sleep(3000); if(!alive(t)) return;
+      const w = document.createElement("p"); w.className = "word dim small"; w.textContent = TEXT.fixed.after2;
+      w.style.maxWidth = "34em"; w.style.margin = "2.2em auto 0"; w.style.width = "100%";
+      el.insertBefore(w, hint); requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add("show")));
+      await sleep(3600); if(!alive(t)) return;
+    } else { await sleep(2200); if(!alive(t)) return; }
+    hint.classList.add("show");
+  } else {
+    // 三つ目: 8秒の空白 → 場面 → 止められる（16秒）→ 二つの言葉 → 再び動ける
+    await sleep(600); if(!alive(t)) return; el.scrollIntoView({ block:"start" }); walk._lockTop = walk.scrollTop; walk.classList.add("lock");
+    await sleep(7400); if(!alive(t)) return;
+    await typeIn(m, data.m[2], t, 95); if(!alive(t)) return;
+    await sleep(16000); if(!alive(t)) return;
+    el.querySelector("#w1").classList.add("show");
+    await sleep(4500); if(!alive(t)) return;
+    el.querySelector("#w2").classList.add("show");
+    await sleep(4500); if(!alive(t)) return;
+    walk.classList.remove("lock");
+    await sleep(1500); if(!alive(t)) return;
+    hint.classList.add("show");
+  }
+}
+let CURRENT = null;
+
+function closed(){
+  token++; closeBtn.style.display = "none"; setPlace(null); walk.classList.remove("on","lock"); if (walk._io) { walk._io.disconnect(); walk._io = null; } walk.innerHTML = "";
+  render(`<p class="center dim">${esc(TEXT.closed)}</p>`);
+}
+
+/* ---------- この作品について ---------- */
+function aboutPage(){
+  token++; closeBtn.style.display = "none"; setPlace(null); walk.classList.remove("on","lock"); if (walk._io) { walk._io.disconnect(); walk._io = null; } walk.innerHTML = "";
+  const sc = render(`
+    <p class="dim small" style="letter-spacing:.3em">${esc(TEXT.aboutButton)}</p>
+    <p class="small" style="white-space:pre-wrap">${esc(TEXT.about)}</p>
+    <p class="dim small" style="white-space:pre-wrap">${esc(TEXT.notice)}</p>
+    <div class="actions"><button class="b q" id="back">${esc(TEXT.aboutBack)}</button></div>`);
+  sc.querySelector("#back").onclick = () => { location.hash = ""; };
+}
+
+/* ---------- 入口の振り分け ---------- */
+async function route(){
+  const h = location.hash.slice(1);
+  if (h.startsWith("r=")){
+    try { const data = await unpack(h.slice(2)); CURRENT = data; return receiverFlow(data); }
+    catch { token++; closeBtn.style.display = "none"; walk.classList.remove("on","lock"); walk.innerHTML = ""; return render(`<p class="center dim">${esc(TEXT.badLink)}</p>`); }
+  }
+  if (h === "about") return aboutPage();
+  return senderFlow();
+}
+window.addEventListener("hashchange", route);
+route();
+})();
+</script>
+</body>
+</html>
